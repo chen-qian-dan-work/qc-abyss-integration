@@ -4,6 +4,8 @@ name: default
 
 steps:
 - name: test
-  image: alpine
-  commands:
-  - echo hello world
+  image: alpine
+  commands:
+  - echo hello world
+  - pwd
+  - ls
