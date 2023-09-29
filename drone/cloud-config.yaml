@@ -1,0 +1,115 @@
+#cloud-config
+
+# Create the docker group.
+groups:
+  - docker
+
+# Add default auto created user to docker group.
+system_info:
+  default_user:
+    groups: [docker]
+
+# Update and upgrade packages.
+package_upgrade: true
+
+runcmd:
+  # Install pre-requisite packages and Docker.
+  - |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg |
+      apt-key add -
+  - |
+    add-apt-repository \
+      "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+  - apt-get update -y
+  - |
+    apt-get install -y \
+      containerd.io \
+      docker-ce \
+      docker-ce-cli \
+      awscli \
+      binutils \
+      s3fs
+
+  # Enable docker service.
+  - systemctl start docker
+  - systemctl enable docker
+
+  # Create mount points.
+  - export AUTOMATED_TESTING_DIR=/mnt/vault/datasets/abyss-internal/automated-testing
+  - |
+    for dn in /mnt/logs /mnt/rapid $AUTOMATED_TESTING_DIR; do
+      mkdir -p $dn
+    done
+  # Mount S3 bucket(s).
+  - |
+    s3fs \
+      dataforce-dev:/automated-testing $AUTOMATED_TESTING_DIR \
+      -o iam_role=dataforce-dev-access \
+      -o url=http://s3.ap-southeast-2.amazonaws.com \
+      -o allow_other \
+      -o use_cache=/tmp
+
+  # Setup environment.
+  - export ECR=325729004853.dkr.ecr.ap-southeast-2.amazonaws.com
+  - export IMAGE_URI=$ECR/abyss/abyss-fabric:test
+  - export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+  - |
+    export INSTANCE_NAME=$(
+      aws ec2 describe-tags \
+        --region ap-southeast-2 \
+        --filters "Name=resource-id,Values=$INSTANCE_ID" "Name=key,Values=Name" \
+        --query "Tags[0].Value" \
+        --output text
+    )
+  - export LOGS_DIR=/mnt/logs/$INSTANCE_NAME
+  - mkdir -p $LOGS_DIR
+
+  # Constitution test deploys to this instance of mongodb.
+  - docker run --rm --network host --detach mongo
+
+  # Run tests on docker containers.
+  - |
+    aws ecr get-login-password \
+      --region ap-southeast-2 |
+      docker login \
+        --username AWS \
+        --password-stdin \
+        $ECR
+
+  - |
+    # "echo Hello"
+    # "make test"
+    # "make test-python-long"
+    for command in \
+      "pytest -m long_test assets/examples/deploy/workflow/tests/test_constitution.py::test_constitution_gold"
+    do
+      container_id=$(
+        docker run \
+          --env TERM=dumb \
+          --volume $AUTOMATED_TESTING_DIR/abyss-fabric/workflows/final-deployment/constitution-test/input-data/other:/mnt/pond/processed/abyss-internal \
+          --volume $AUTOMATED_TESTING_DIR/abyss-fabric:$AUTOMATED_TESTING_DIR/abyss-fabric \
+          --network host \
+          --workdir /root/src/abyss/abyss-fabric \
+          --detach \
+          $IMAGE_URI \
+          $command
+      )
+      exit_code=$(docker container wait $container_id)
+      logname_part=$(echo $command | sed -E 's/[^_[:alnum:]]/-/g')
+      docker container logs $container_id \
+        > $LOGS_DIR/docker-run-$logname_part.log
+      echo $exit_code >> $LOGS_DIR/docker-run-$logname_part.log
+      docker container rm $container_id
+    done
+
+  # cloud-init log files include more detailed logging data.
+  - cp /var/log/cloud-init* $LOGS_DIR/
+
+  # Copy locally generated data to S3 bucket.
+  - |
+    for dn in logs rapid; do
+      aws s3 cp --recursive --no-follow-symlinks /mnt/$dn s3://dataforce-dev/remotes/$dn
+    done
+
+  # Shutdown the instance.
+  - shutdown --poweroff now
