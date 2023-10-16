@@ -85,6 +85,7 @@ runcmd:
     # "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py::test_graph_from_inspection_flow"
     for command in \
       "cat python/abyss/fabric/graph/tests/test_graph_parts.py"
+      "tree python/abyss/fabric/graph"
     do
       container_id=$(
         docker run \
