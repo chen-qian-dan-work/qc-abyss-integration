@@ -66,6 +66,7 @@ runcmd:
 
   # Constitution test deploys to this instance of mongodb.
   - docker run --rm --network host --detach mongo
+  - docker run --rm --network host --detach prefect
 
   # Run tests on docker containers.
   - |
@@ -82,7 +83,7 @@ runcmd:
     # "pytest -m long_test assets/examples/deploy/workflow/tests/test_constitution.py::test_constitution_gold"
     # "pytest -m long_test tests/test_hello_world.py::test_hello_world_long_test"
     for command in \
-      "pytest -m long_test assets/examples/deploy/workflow/tests/test_constitution.py::test_constitution_gold"
+      "pytest -m long_test tests/test_hello_world.py::test_hello_world_long_test"
     do
       container_id=$(
         docker run \
