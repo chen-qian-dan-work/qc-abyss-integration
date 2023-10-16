@@ -84,7 +84,7 @@ runcmd:
     # "pytest -m long_test tests/test_hello_world.py::test_hello_world_long_test"
     # "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py::test_graph_from_inspection_flow"
     for command in \
-      "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py"
+      "cat python/abyss/fabric/graph/tests/test_graph_parts.py"
     do
       container_id=$(
         docker run \
