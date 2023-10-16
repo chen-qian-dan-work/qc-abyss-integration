@@ -82,7 +82,7 @@ runcmd:
     # "make test-python-long"
     # "pytest -m long_test assets/examples/deploy/workflow/tests/test_constitution.py::test_constitution_gold"
     # "pytest -m long_test tests/test_hello_world.py::test_hello_world_long_test"
-    # "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py"
+    # "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py::test_graph_from_inspection_flow"
     for command in \
       "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py"
     do
