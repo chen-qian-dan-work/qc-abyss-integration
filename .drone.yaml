@@ -39,7 +39,7 @@ steps:
   - |
     for logname in $LOGS_DIR/docker-run-*.log; do
       exit_code=$(tail -n 1 $logname)
-      if [ $exit_code != 0 ]; then
+      if [[ ! "$exit_code" == 0 ]]; then
         exit 1
       fi
     done
