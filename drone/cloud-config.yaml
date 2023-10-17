@@ -50,8 +50,10 @@ runcmd:
       -o use_cache=/tmp
 
   # Setup environment.
-  - export ECR=325729004853.dkr.ecr.ap-southeast-2.amazonaws.com
-  - export IMAGE_URI=$ECR/abyss/abyss-fabric:test
+  # - export ECR=325729004853.dkr.ecr.ap-southeast-2.amazonaws.com   # dataforce-dev account
+  - export ECR=016735869948.dkr.ecr.ap-southeast-2.amazonaws.com
+  # - export IMAGE_URI=$ECR/abyss/abyss-fabric:test
+  - export IMAGE_URI=$ECR/abyss/abyss-fabric
   - export INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
   - |
     export INSTANCE_NAME=$(
@@ -83,8 +85,9 @@ runcmd:
     # "pytest -m long_test assets/examples/deploy/workflow/tests/test_constitution.py::test_constitution_gold"
     # "pytest -m long_test tests/test_hello_world.py::test_hello_world_long_test"
     # "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py::test_graph_from_inspection_flow"
+    # "cat python/abyss/fabric/graph/tests/test_graph_parts.py"
     for command in \
-      "cat python/abyss/fabric/graph/tests/test_graph_parts.py"
+      "pytest -m long_test python/abyss/fabric/graph/tests/test_graph_parts.py::test_graph_from_inspection_flow"
     do
       container_id=$(
         docker run \
